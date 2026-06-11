@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>Nimo & Deep — Accountability</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0e0e10;
+    --surface: #18181c;
+    --surface2: #222228;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.13);
+    --text: #f0f0f0;
+    --muted: #888;
+    --faint: #444;
+    --nimo: #a78bfa;
+    --nimo-bg: rgba(167,139,250,0.12);
+    --nimo-border: rgba(167,139,250,0.3);
+    --deep: #34d399;
+    --deep-bg: rgba(52,211,153,0.12);
+    --deep-border: rgba(52,211,153,0.3);
+    --yes: #34d399;
+    --yes-bg: rgba(52,211,153,0.1);
+    --no: #f87171;
+    --no-bg: rgba(248,113,113,0.1);
+    --amber: #fbbf24;
+    --amber-bg: rgba(251,191,36,0.1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; }
+
+  /* Firebase config screen */
+  #config-screen {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 2rem; text-align: center;
+  }
+  #config-screen h1 { font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+  #config-screen p { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 1.5rem; max-width: 380px; }
+  #config-screen input {
+    width: 100%; max-width: 400px; padding: 12px 14px; background: var(--surface);
+    border: 1px solid var(--border2); border-radius: 10px; color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 13px; margin-bottom: 10px;
+  }
+  #config-screen input:focus { outline: none; border-color: var(--nimo); }
+  #config-screen button {
+    width: 100%; max-width: 400px; padding: 13px; background: var(--nimo);
+    border: none; border-radius: 10px; color: #0e0e10; font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 4px;
+  }
+  #config-screen .hint { font-size: 12px; color: var(--faint); margin-top: 1.5rem; max-width: 380px; line-height: 1.7; }
+  #config-screen .hint a { color: var(--nimo); text-decoration: none; }
+
+  /* App */
+  #app { display: none; flex-direction: column; min-height: 100vh; max-width: 480px; margin: 0 auto; }
+
+  /* Header */
+  .app-header {
+    padding: 1rem 1.25rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .app-header .logo { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; }
+  .app-header .logo span.n { color: var(--nimo); }
+  .app-header .logo span.d { color: var(--deep); }
+  .date-pill {
+    font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 4px 10px;
+  }
+
+  /* Tabs */
+  .tabs { display: flex; padding: 0.75rem 1.25rem 0; gap: 4px; }
+  .tab-btn {
+    flex: 1; padding: 8px 4px; background: none; border: none;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent;
+    transition: all 0.15s; letter-spacing: 0.01em;
+  }
+  .tab-btn.active { color: var(--text); border-bottom-color: var(--nimo); }
+
+  /* Content */
+  .tab-content { display: none; flex: 1; padding: 1.25rem; overflow-y: auto; }
+  .tab-content.active { display: block; }
+
+  /* Section label */
+  .section-label {
+    font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.08em;
+    text-transform: uppercase; margin-bottom: 0.75rem; margin-top: 1.25rem;
+  }
+  .section-label:first-child { margin-top: 0; }
+
+  /* Today cards */
+  .today-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .person-card {
+    background: var(--surface); border-radius: 14px; border: 1px solid var(--border);
+    padding: 1rem;
+  }
+  .person-card.nimo { border-color: var(--nimo-border); }
+  .person-card.deep { border-color: var(--deep-border); }
+  .p-name {
+    font-size: 14px; font-weight: 600; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .p-name .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .p-stat { margin-bottom: 8px; }
+  .p-stat-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; font-weight: 500; padding: 3px 8px;
+    border-radius: 20px; max-width: 100%; overflow: hidden;
+    white-space: nowrap; text-overflow: ellipsis;
+  }
+  .badge-yes { background: var(--yes-bg); color: var(--yes); }
+  .badge-no { background: var(--no-bg); color: var(--no); }
+  .badge-empty { background: var(--surface2); color: var(--faint); }
+
+  /* Streak dots */
+  .streak-row { display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap; }
+  .s-dot {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--surface2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--faint); font-family: 'DM Mono', monospace;
+    font-weight: 500; flex-direction: column; gap: 1px;
+  }
+  .s-dot .d-label { font-size: 9px; }
+  .s-dot.w { background: rgba(167,139,250,0.15); border-color: rgba(167,139,250,0.4); color: var(--nimo); }
+  .s-dot.f { background: var(--amber-bg); border-color: rgba(251,191,36,0.4); color: var(--amber); }
+  .s-dot.wf { background: rgba(52,211,153,0.15); border-color: rgba(52,211,153,0.4); color: var(--deep); }
+
+  /* Log tab */
+  .person-switcher { display: flex; gap: 8px; margin-bottom: 1.25rem; }
+  .psw-btn {
+    flex: 1; padding: 10px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 14px;
+    font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.15s;
+  }
+  .psw-btn.active-nimo { background: var(--nimo-bg); border-color: var(--nimo-border); color: var(--nimo); }
+  .psw-btn.active-deep { background: var(--deep-bg); border-color: var(--deep-border); color: var(--deep); }
+
+  /* Form */
+  .form-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.25rem; margin-bottom: 12px;
+  }
+  .form-q { font-size: 14px; font-weight: 500; margin-bottom: 10px; color: var(--text); }
+  .yn-row { display: flex; gap: 8px; }
+  .yn-btn {
+    flex: 1; padding: 9px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 14px;
+    font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.15s;
+  }
+  .yn-btn.sel-yes { background: var(--yes-bg); border-color: rgba(52,211,153,0.4); color: var(--yes); }
+  .yn-btn.sel-no { background: var(--no-bg); border-color: rgba(248,113,113,0.4); color: var(--no); }
+  .extra-fields { margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .miss-reason { margin-top: 12px; }
+  .field-label { font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  select, input[type="number"], input[type="text"] {
+    width: 100%; padding: 9px 11px; background: var(--surface2);
+    border: 1px solid var(--border2); border-radius: 8px; color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 14px; appearance: none; -webkit-appearance: none;
+  }
+  select:focus, input:focus { outline: none; border-color: var(--nimo); }
+  option { background: #222; }
+  .save-btn {
+    width: 100%; padding: 14px; background: var(--nimo); border: none;
+    border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 15px;
+    font-weight: 600; color: #0e0e10; cursor: pointer; transition: opacity 0.15s;
+    margin-top: 4px;
+  }
+  .save-btn:active { opacity: 0.85; }
+  .save-btn.deep-btn { background: var(--deep); }
+
+  /* History */
+  .hist-switcher { display: flex; gap: 8px; margin-bottom: 1.25rem; }
+  .hist-entry {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .hist-entry:last-child { border-bottom: none; }
+  .hist-date { font-size: 13px; color: var(--muted); font-family: 'DM Mono', monospace; min-width: 70px; }
+  .hist-badges { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .hist-entry .miss-text { font-size: 11px; color: var(--no); margin-top: 2px; }
+  .hist-entry-inner { display: flex; flex-direction: column; align-items: flex-end; }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(10px);
+    background: var(--surface2); border: 1px solid var(--border2);
+    color: var(--text); padding: 10px 20px; border-radius: 20px;
+    font-size: 13px; font-weight: 500; z-index: 999; opacity: 0;
+    transition: all 0.2s; pointer-events: none; white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Loading */
+  .loading { text-align: center; padding: 2rem; color: var(--muted); font-size: 14px; }
+
+  /* Legend */
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+  .leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+  .leg-dot { width: 10px; height: 10px; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- Firebase config screen -->
+<div id="config-screen">
+  <div style="font-size:32px;margin-bottom:12px;">🔥</div>
+  <h1>Set up your app</h1>
+  <p>Enter your Firebase Realtime Database URL to sync data between Nimo and Deep's phones.</p>
+  <input type="text" id="fb-url" placeholder="https://your-project-default-rtdb.firebaseio.com" autocomplete="off" autocorrect="off" spellcheck="false"/>
+  <button onclick="saveConfig()">Connect & Open App</button>
+  <p class="hint">
+    Don't have one? <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → New project → Realtime Database → Start in test mode → copy the URL shown.<br><br>
+    Your URL looks like:<br><code style="font-family:'DM Mono',monospace;color:var(--nimo);">https://xyz-default-rtdb.firebaseio.com</code>
+  </p>
+</div>
+
+<!-- Main App -->
+<div id="app">
+  <div class="app-header">
+    <div class="logo"><span class="n">Nimo</span> <span style="color:var(--faint)">&</span> <span class="d">Deep</span></div>
+    <div class="date-pill" id="date-label"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('overview')">Overview</button>
+    <button class="tab-btn" onclick="showTab('log')">Log</button>
+    <button class="tab-btn" onclick="showTab('history')">History</button>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div class="tab-content active" id="tab-overview">
+    <div class="section-label">Today</div>
+    <div class="today-grid">
+      <div class="person-card nimo" id="card-nimo">
+        <div class="p-name"><div class="dot" style="background:var(--nimo)"></div>Nimo</div>
+        <div class="loading">…</div>
+      </div>
+      <div class="person-card deep" id="card-deep">
+        <div class="p-name"><div class="dot" style="background:var(--deep)"></div>Deep</div>
+        <div class="loading">…</div>
+      </div>
+    </div>
+    <div class="section-label">This week</div>
+    <div id="week-nimo-wrap">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:500;">Nimo</div>
+      <div class="streak-row" id="week-nimo"></div>
+    </div>
+    <div style="margin-top:14px;" id="week-deep-wrap">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:500;">Deep</div>
+      <div class="streak-row" id="week-deep"></div>
+    </div>
+    <div class="legend" style="margin-top:14px;">
+      <div class="leg-item"><div class="leg-dot" style="background:rgba(167,139,250,0.4)"></div>Workout</div>
+      <div class="leg-item"><div class="leg-dot" style="background:rgba(251,191,36,0.4)"></div>Fruits</div>
+      <div class="leg-item"><div class="leg-dot" style="background:rgba(52,211,153,0.4)"></div>Both</div>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div class="tab-content" id="tab-log">
+    <div class="person-switcher">
+      <button class="psw-btn active-nimo" id="psw-nimo" onclick="selectPerson('Nimo')">Nimo</button>
+      <button class="psw-btn" id="psw-deep" onclick="selectPerson('Deep')">Deep</button>
+    </div>
+
+    <div class="form-card">
+      <div class="form-q">🏋️ Did you work out today?</div>
+      <div class="yn-row">
+        <button class="yn-btn" id="wo-yes" onclick="setWo(true)">Yes</button>
+        <button class="yn-btn" id="wo-no" onclick="setWo(false)">No</button>
+      </div>
+      <div id="wo-extra" style="display:none;" class="extra-fields">
+        <div>
+          <div class="field-label">Type</div>
+          <select id="wo-type">
+            <option>Strength</option>
+            <option>Cardio</option>
+            <option>HIIT</option>
+            <option>Yoga</option>
+            <option>Walk / Run</option>
+            <option>Sport</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div>
+          <div class="field-label">Duration (min)</div>
+          <input type="number" id="wo-dur" placeholder="45" min="1" max="360"/>
+        </div>
+      </div>
+      <div id="wo-miss" style="display:none;" class="miss-reason">
+        <div class="field-label">Reason skipped</div>
+        <select id="wo-miss-reason">
+          <option value="">— select —</option>
+          <option>Rest day</option>
+          <option>Too busy</option>
+          <option>Feeling sick</option>
+          <option>Travelling</option>
+          <option>Just lazy 😬</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-q">🍎 Did you eat fruits today?</div>
+      <div class="yn-row">
+        <button class="yn-btn" id="fr-yes" onclick="setFr(true)">Yes</button>
+        <button class="yn-btn" id="fr-no" onclick="setFr(false)">No</button>
+      </div>
+    </div>
+
+    <button class="save-btn" id="save-btn" onclick="saveLog()">Save for Nimo</button>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="tab-content" id="tab-history">
+    <div class="hist-switcher">
+      <button class="psw-btn active-nimo" id="hist-nimo" onclick="selectHist('Nimo')">Nimo</button>
+      <button class="psw-btn" id="hist-deep" onclick="selectHist('Deep')">Deep</button>
+    </div>
+    <div id="history-list"><div class="loading">Loading…</div></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────
+const CONFIG_KEY = 'nd_firebase_url';
+let FB_URL = localStorage.getItem(CONFIG_KEY) || '';
+
+function saveConfig() {
+  const val = document.getElementById('fb-url').value.trim().replace(/\/$/, '');
+  if (!val.startsWith('https://')) { showToast('Enter a valid Firebase URL'); return; }
+  FB_URL = val;
+  localStorage.setItem(CONFIG_KEY, FB_URL);
+  initApp();
+}
+
+// ── Firebase REST helpers ────────────────────────────────────────
+async function fbGet(path) {
+  const r = await fetch(`${FB_URL}/${path}.json`);
+  if (!r.ok) throw new Error('fetch failed');
+  return r.json();
+}
+async function fbSet(path, data) {
+  const r = await fetch(`${FB_URL}/${path}.json`, {
+    method: 'PUT', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error('write failed');
+  return r.json();
+}
+
+// ── State ────────────────────────────────────────────────────────
+let curPerson = 'Nimo';
+let curHist = 'Nimo';
+let woVal = null, frVal = null;
+const PEOPLE = ['Nimo','Deep'];
+const DNAMES = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+function todayStr() { return new Date().toISOString().slice(0,10); }
+
+function dateStr(daysAgo) {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return d.toISOString().slice(0,10);
+}
+
+function last7() {
+  return Array.from({length:7},(_,i)=>dateStr(6-i));
+}
+function last30() {
+  return Array.from({length:30},(_,i)=>dateStr(29-i));
+}
+
+// ── App init ─────────────────────────────────────────────────────
+function initApp() {
+  document.getElementById('config-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  const d = new Date();
+  document.getElementById('date-label').textContent =
+    d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
+  renderOverview();
+}
+
+// ── Tabs ─────────────────────────────────────────────────────────
+function showTab(t) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  const btns = document.querySelectorAll('.tab-btn');
+  const idx = ['overview','log','history'].indexOf(t);
+  btns[idx].classList.add('active');
+  if (t==='overview') renderOverview();
+  if (t==='history') renderHistory();
+}
+
+// ── Person selector ───────────────────────────────────────────────
+function selectPerson(p) {
+  curPerson = p;
+  document.getElementById('psw-nimo').className = 'psw-btn' + (p==='Nimo'?' active-nimo':'');
+  document.getElementById('psw-deep').className = 'psw-btn' + (p==='Deep'?' active-deep':'');
+  document.getElementById('save-btn').textContent = 'Save for '+p;
+  document.getElementById('save-btn').className = 'save-btn' + (p==='Deep'?' deep-btn':'');
+  woVal=null; frVal=null;
+  ['wo-yes','wo-no','fr-yes','fr-no'].forEach(id=>document.getElementById(id).className='yn-btn');
+  document.getElementById('wo-extra').style.display='none';
+  document.getElementById('wo-miss').style.display='none';
+}
+function selectHist(p) {
+  curHist = p;
+  document.getElementById('hist-nimo').className='psw-btn'+(p==='Nimo'?' active-nimo':'');
+  document.getElementById('hist-deep').className='psw-btn'+(p==='Deep'?' active-deep':'');
+  renderHistory();
+}
+
+// ── Log form ──────────────────────────────────────────────────────
+function setWo(v) {
+  woVal = v;
+  document.getElementById('wo-yes').className='yn-btn'+(v?' sel-yes':'');
+  document.getElementById('wo-no').className='yn-btn'+(!v?' sel-no':'');
+  document.getElementById('wo-extra').style.display = v?'grid':'none';
+  document.getElementById('wo-miss').style.display = !v?'block':'none';
+}
+function setFr(v) {
+  frVal = v;
+  document.getElementById('fr-yes').className='yn-btn'+(v?' sel-yes':'');
+  document.getElementById('fr-no').className='yn-btn'+(!v?' sel-no':'');
+}
+
+async function saveLog() {
+  if (woVal===null||frVal===null) { showToast('Fill in both fields first'); return; }
+  const entry = {
+    workout: woVal,
+    fruits: frVal,
+    type: woVal ? document.getElementById('wo-type').value : null,
+    duration: woVal ? (parseInt(document.getElementById('wo-dur').value)||null) : null,
+    missReason: !woVal ? (document.getElementById('wo-miss-reason').value||null) : null,
+    ts: Date.now()
+  };
+  try {
+    await fbSet(`logs/${curPerson}/${todayStr()}`, entry);
+    showToast('Saved for '+curPerson+' ✓');
+    selectPerson(curPerson);
+  } catch(e) { showToast('Error saving — check Firebase URL'); }
+}
+
+// ── Overview ──────────────────────────────────────────────────────
+async function renderOverview() {
+  const today = todayStr();
+  for (const p of PEOPLE) {
+    let e = null;
+    try { e = await fbGet(`logs/${p}/${today}`); } catch(_) {}
+    const el = document.getElementById('card-'+p.toLowerCase());
+    const woBadge = e
+      ? (e.workout
+          ? `<span class="status-badge badge-yes">✓ ${e.type||'Done'}${e.duration?' · '+e.duration+'m':''}</span>`
+          : `<span class="status-badge badge-no">✗ Skipped${e.missReason?' · '+e.missReason:''}</span>`)
+      : `<span class="status-badge badge-empty">Not logged</span>`;
+    const frBadge = e
+      ? (e.fruits ? `<span class="status-badge badge-yes">✓ Yes</span>` : `<span class="status-badge badge-no">✗ No</span>`)
+      : `<span class="status-badge badge-empty">Not logged</span>`;
+    el.innerHTML = `<div class="p-name"><div class="dot" style="background:var(--${p.toLowerCase()})"></div>${p}</div>
+      <div class="p-stat"><div class="p-stat-label">Workout</div>${woBadge}</div>
+      <div class="p-stat"><div class="p-stat-label">Fruits</div>${frBadge}</div>`;
+  }
+
+  const days7 = last7();
+  for (const p of PEOPLE) {
+    let dots = '';
+    for (const d of days7) {
+      let e = null;
+      try { e = await fbGet(`logs/${p}/${d}`); } catch(_) {}
+      const dayName = DNAMES[new Date(d+'T12:00:00').getDay()];
+      let cls = '';
+      if (e && e.workout && e.fruits) cls='wf';
+      else if (e && e.workout) cls='w';
+      else if (e && e.fruits) cls='f';
+      dots += `<div class="s-dot ${cls}" title="${d}"><span class="d-label">${dayName}</span></div>`;
+    }
+    document.getElementById('week-'+p.toLowerCase()).innerHTML = dots;
+  }
+}
+
+// ── History ───────────────────────────────────────────────────────
+async function renderHistory() {
+  const listEl = document.getElementById('history-list');
+  listEl.innerHTML = '<div class="loading">Loading…</div>';
+  const days = last30();
+  const rows = [];
+  for (const d of days) {
+    let e = null;
+    try { e = await fbGet(`logs/${curHist}/${d}`); } catch(_) {}
+    const dateDisp = new Date(d+'T12:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+    const dayDisp = DNAMES[new Date(d+'T12:00:00').getDay()];
+    const woBadge = e
+      ? (e.workout
+          ? `<span class="status-badge badge-yes" style="font-size:11px;">✓ ${e.type||'Workout'}${e.duration?' · '+e.duration+'m':''}</span>`
+          : `<span class="status-badge badge-no" style="font-size:11px;">✗ No workout</span>`)
+      : `<span class="status-badge badge-empty" style="font-size:11px;">—</span>`;
+    const frBadge = e
+      ? (e.fruits
+          ? `<span class="status-badge badge-yes" style="font-size:11px;">✓ Fruits</span>`
+          : `<span class="status-badge badge-no" style="font-size:11px;">✗ No fruits</span>`)
+      : `<span class="status-badge badge-empty" style="font-size:11px;">—</span>`;
+    const missNote = (e && !e.workout && e.missReason)
+      ? `<div class="miss-text">${e.missReason}</div>` : '';
+    rows.push(`<div class="hist-entry">
+      <div>
+        <div class="hist-date">${dateDisp}</div>
+        <div style="font-size:11px;color:var(--faint);">${dayDisp}</div>
+      </div>
+      <div class="hist-entry-inner">
+        <div class="hist-badges">${woBadge}${frBadge}</div>
+        ${missNote}
+      </div>
+    </div>`);
+  }
+  listEl.innerHTML = rows.join('') || '<div class="loading">No entries yet.</div>';
+}
+
+// ── Toast ─────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+// ── Boot ──────────────────────────────────────────────────────────
+if (FB_URL) initApp();
+</script>
+</body>
+</html>
