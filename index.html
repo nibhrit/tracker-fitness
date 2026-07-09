@@ -205,6 +205,66 @@
   .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
   .leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
   .leg-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+  /* Food tab */
+  .food-today-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.25rem; text-align: center;
+  }
+  .food-cal-num { font-size: 34px; font-weight: 600; font-family: 'DM Mono', monospace; }
+  .food-cal-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .food-macros { display: flex; justify-content: center; gap: 16px; margin-top: 10px; }
+  .food-macro { font-size: 12px; color: var(--muted); }
+  .food-macro b { color: var(--text); font-weight: 600; }
+
+  .food-actions { display: flex; gap: 8px; margin: 14px 0; }
+  .food-action-btn {
+    flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--border2);
+    background: var(--surface2); color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .food-action-btn.scan { border-color: rgba(167,139,250,0.4); }
+
+  .food-entry-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .food-entry-row:last-child { border-bottom: none; }
+  .food-entry-name { font-size: 14px; }
+  .food-entry-src { font-size: 10px; color: var(--faint); margin-left: 6px; }
+  .food-entry-right { display: flex; align-items: center; gap: 10px; }
+  .food-entry-cal { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--muted); }
+  .food-entry-del { background: none; border: none; color: var(--faint); font-size: 16px; cursor: pointer; padding: 2px 6px; }
+  .food-entry-del:active { color: var(--no); }
+
+  .week-chart { display: flex; gap: 8px; align-items: flex-end; margin-top: 8px; }
+  .week-chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; }
+  .week-chart-bar { width: 100%; max-width: 28px; border-radius: 4px 4px 0 0; background: var(--surface2); }
+  .week-chart-bar.has-data { background: var(--nimo); }
+  .week-chart-col.deep .week-chart-bar.has-data { background: var(--deep); }
+  .week-chart-val { font-size: 9px; color: var(--faint); font-family: 'DM Mono', monospace; margin-bottom: 2px; }
+  .week-chart-day { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+  /* Food modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: flex; align-items: flex-end; justify-content: center; z-index: 1000;
+  }
+  .modal-card {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 18px 18px 0 0; padding: 1.5rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom));
+    width: 100%; max-width: 480px;
+  }
+  .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 14px; }
+  .scan-loading { text-align: center; padding: 2rem 0; color: var(--muted); font-size: 14px; }
+  .macro-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .modal-btn-row { display: flex; gap: 8px; margin-top: 16px; }
+  .modal-cancel-btn {
+    flex: 1; padding: 13px; background: none; border: 1px solid var(--border2);
+    border-radius: 12px; color: var(--muted); font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .modal-btn-row .save-btn { flex: 2; margin-top: 0; }
 </style>
 </head>
 <body>
@@ -232,6 +292,7 @@
   <div class="tabs">
     <button class="tab-btn active" onclick="showTab('overview')">Overview</button>
     <button class="tab-btn" onclick="showTab('log')">Log</button>
+    <button class="tab-btn" onclick="showTab('food')">Food</button>
     <button class="tab-btn" onclick="showTab('history')">History</button>
   </div>
 
@@ -320,6 +381,31 @@
     <button class="save-btn" id="save-btn" onclick="saveLog()">Save for Nimo</button>
   </div>
 
+  <!-- FOOD -->
+  <div class="tab-content" id="tab-food">
+    <div class="person-switcher">
+      <button class="psw-btn active-nimo" id="food-nimo" onclick="selectFoodPerson('Nimo')">Nimo</button>
+      <button class="psw-btn" id="food-deep" onclick="selectFoodPerson('Deep')">Deep</button>
+    </div>
+
+    <div class="section-label">Today</div>
+    <div class="food-today-card" id="food-today-card">
+      <div class="loading">…</div>
+    </div>
+
+    <div class="food-actions">
+      <button class="food-action-btn scan" onclick="triggerScan()">📷 Scan food</button>
+      <button class="food-action-btn" onclick="openFoodModal('manual')">✏️ Manual entry</button>
+    </div>
+    <input type="file" id="food-photo-input" accept="image/*" capture="environment" style="display:none" onchange="onPhotoSelected(event)"/>
+
+    <div class="section-label" id="food-entries-label" style="display:none;">Today's log</div>
+    <div id="food-entries-list"></div>
+
+    <div class="section-label">This week</div>
+    <div class="week-chart" id="food-week-chart"></div>
+  </div>
+
   <!-- HISTORY -->
   <div class="tab-content" id="tab-history">
     <div class="hist-switcher">
@@ -330,12 +416,49 @@
   </div>
 </div>
 
+<!-- Food entry modal (manual entry + scan confirm/edit) -->
+<div id="food-modal-overlay" class="modal-overlay" style="display:none;" onclick="if(event.target===this) closeFoodModal()">
+  <div class="modal-card">
+    <div class="modal-title" id="food-modal-title">Add food</div>
+    <div id="food-modal-scanning" style="display:none;" class="scan-loading">Analyzing photo…</div>
+    <div id="food-modal-form">
+      <div class="field-label">Food</div>
+      <input type="text" id="fm-name" placeholder="e.g. Grilled chicken salad"/>
+      <div class="field-label" style="margin-top:10px;">Calories</div>
+      <input type="number" id="fm-calories" placeholder="450" min="0"/>
+      <div class="macro-row">
+        <div>
+          <div class="field-label">Protein (g)</div>
+          <input type="number" id="fm-protein" placeholder="—" min="0"/>
+        </div>
+        <div>
+          <div class="field-label">Carbs (g)</div>
+          <input type="number" id="fm-carbs" placeholder="—" min="0"/>
+        </div>
+        <div>
+          <div class="field-label">Fat (g)</div>
+          <input type="number" id="fm-fat" placeholder="—" min="0"/>
+        </div>
+      </div>
+      <div class="modal-btn-row">
+        <button class="modal-cancel-btn" onclick="closeFoodModal()">Cancel</button>
+        <button class="save-btn" id="fm-save-btn" onclick="saveFoodEntry()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
 // ── Config ──────────────────────────────────────────────────────
 const CONFIG_KEY = 'nd_firebase_url';
 let FB_URL = localStorage.getItem(CONFIG_KEY) || '';
+
+// Food-scan proxy — a Cloudflare Worker that holds the Anthropic API key
+// server-side (see /worker). Fill these in after deploying the worker.
+const SCAN_WORKER_URL = 'https://nimo-deep-food-scan.nibhritm.workers.dev';
+const SCAN_APP_SECRET = 'c5b2b81a7fb637a0e3f4f3362bd05c551d6b1f1cde9b7065';
 
 function saveConfig() {
   const val = document.getElementById('fb-url').value.trim().replace(/\/$/, '');
@@ -359,11 +482,25 @@ async function fbSet(path, data) {
   if (!r.ok) throw new Error('write failed');
   return r.json();
 }
+async function fbPost(path, data) {
+  const r = await fetch(`${FB_URL}/${path}.json`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error('write failed');
+  return r.json();
+}
+async function fbDelete(path) {
+  const r = await fetch(`${FB_URL}/${path}.json`, { method: 'DELETE' });
+  if (!r.ok) throw new Error('delete failed');
+}
 
 // ── State ────────────────────────────────────────────────────────
 let curPerson = 'Nimo';
 let curHist = 'Nimo';
+let curFood = 'Nimo';
 let woVal = null, frVal = null;
+let foodDraft = null;
 const PEOPLE = ['Nimo','Deep'];
 const DNAMES = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
@@ -398,9 +535,10 @@ function showTab(t) {
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-'+t).classList.add('active');
   const btns = document.querySelectorAll('.tab-btn');
-  const idx = ['overview','log','history'].indexOf(t);
+  const idx = ['overview','log','food','history'].indexOf(t);
   btns[idx].classList.add('active');
   if (t==='overview') renderOverview();
+  if (t==='food') renderFood();
   if (t==='history') renderHistory();
 }
 
@@ -489,6 +627,184 @@ async function renderOverview() {
     }
     document.getElementById('week-'+p.toLowerCase()).innerHTML = dots;
   }
+}
+
+// ── Food tracking ────────────────────────────────────────────────
+function selectFoodPerson(p) {
+  curFood = p;
+  document.getElementById('food-nimo').className = 'psw-btn'+(p==='Nimo'?' active-nimo':'');
+  document.getElementById('food-deep').className = 'psw-btn'+(p==='Deep'?' active-deep':'');
+  renderFood();
+}
+
+async function renderFood() {
+  const today = todayStr();
+  const cardEl = document.getElementById('food-today-card');
+  cardEl.innerHTML = '<div class="loading">…</div>';
+  let entries = null;
+  try { entries = await fbGet(`foodlogs/${curFood}/${today}`); } catch(_) {}
+  const list = entries ? Object.entries(entries) : [];
+  const totalCal = list.reduce((s,[,e])=>s+(e.calories||0),0);
+  const totalP = list.reduce((s,[,e])=>s+(e.protein||0),0);
+  const totalC = list.reduce((s,[,e])=>s+(e.carbs||0),0);
+  const totalF = list.reduce((s,[,e])=>s+(e.fat||0),0);
+  cardEl.innerHTML = `
+    <div class="food-cal-num" style="color:var(--${curFood.toLowerCase()})">${totalCal}</div>
+    <div class="food-cal-label">calories today</div>
+    ${(totalP||totalC||totalF) ? `<div class="food-macros">
+      <div class="food-macro"><b>${totalP}g</b> protein</div>
+      <div class="food-macro"><b>${totalC}g</b> carbs</div>
+      <div class="food-macro"><b>${totalF}g</b> fat</div>
+    </div>` : ''}`;
+
+  const listEl = document.getElementById('food-entries-list');
+  const labelEl = document.getElementById('food-entries-label');
+  if (list.length === 0) {
+    labelEl.style.display = 'none';
+    listEl.innerHTML = '';
+  } else {
+    labelEl.style.display = 'block';
+    listEl.innerHTML = list
+      .sort((a,b)=>(b[1].ts||0)-(a[1].ts||0))
+      .map(([id,e])=>`
+        <div class="food-entry-row">
+          <div>
+            <span class="food-entry-name">${e.name||'Food'}</span>
+            <span class="food-entry-src">${e.source==='scan'?'📷':'✏️'}</span>
+          </div>
+          <div class="food-entry-right">
+            <span class="food-entry-cal">${e.calories||0} kcal</span>
+            <button class="food-entry-del" onclick="deleteFoodEntry('${today}','${id}')">✕</button>
+          </div>
+        </div>`).join('');
+  }
+
+  renderFoodWeekChart();
+}
+
+async function deleteFoodEntry(date, id) {
+  try {
+    await fbDelete(`foodlogs/${curFood}/${date}/${id}`);
+    showToast('Deleted');
+    renderFood();
+  } catch(e) { showToast('Error deleting'); }
+}
+
+async function renderFoodWeekChart() {
+  const chartEl = document.getElementById('food-week-chart');
+  chartEl.innerHTML = '<div class="loading">…</div>';
+  const days = last7();
+  const totals = [];
+  for (const d of days) {
+    let entries = null;
+    try { entries = await fbGet(`foodlogs/${curFood}/${d}`); } catch(_) {}
+    const cal = entries ? Object.values(entries).reduce((s,e)=>s+(e.calories||0),0) : 0;
+    totals.push(cal);
+  }
+  const max = Math.max(...totals, 1);
+  chartEl.innerHTML = totals.map((cal,i) => {
+    const d = days[i];
+    const dayName = DNAMES[new Date(d+'T12:00:00').getDay()];
+    const barPx = cal > 0 ? Math.max(Math.round((cal/max)*60), 4) : 2;
+    return `<div class="week-chart-col ${curFood.toLowerCase()}">
+      <div class="week-chart-val">${cal||''}</div>
+      <div class="week-chart-bar ${cal>0?'has-data':''}" style="height:${barPx}px"></div>
+      <div class="week-chart-day">${dayName}</div>
+    </div>`;
+  }).join('');
+}
+
+function triggerScan() {
+  document.getElementById('food-photo-input').value = '';
+  document.getElementById('food-photo-input').click();
+}
+
+async function onPhotoSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  openFoodModal('scan');
+  document.getElementById('food-modal-scanning').style.display = 'block';
+  document.getElementById('food-modal-form').style.display = 'none';
+  try {
+    const { base64, mediaType } = await resizeImageToBase64(file, 768);
+    const res = await fetch(SCAN_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-app-secret': SCAN_APP_SECRET },
+      body: JSON.stringify({ image: base64, media_type: mediaType })
+    });
+    if (!res.ok) throw new Error('scan failed');
+    const data = await res.json();
+    document.getElementById('fm-name').value = data.food_name || '';
+    document.getElementById('fm-calories').value = data.calories ?? '';
+    document.getElementById('fm-protein').value = data.protein_g ?? '';
+    document.getElementById('fm-carbs').value = data.carbs_g ?? '';
+    document.getElementById('fm-fat').value = data.fat_g ?? '';
+  } catch(e) {
+    showToast('Could not analyze photo — enter manually');
+  } finally {
+    document.getElementById('food-modal-scanning').style.display = 'none';
+    document.getElementById('food-modal-form').style.display = 'block';
+  }
+}
+
+function resizeImageToBase64(file, maxDim) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = () => { img.src = reader.result; };
+    reader.onerror = reject;
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > height && width > maxDim) { height = Math.round(height*maxDim/width); width = maxDim; }
+      else if (height > maxDim) { width = Math.round(width*maxDim/height); height = maxDim; }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+      resolve({ base64: dataUrl.split(',')[1], mediaType: 'image/jpeg' });
+    };
+    img.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function openFoodModal(mode) {
+  foodDraft = { source: mode };
+  document.getElementById('food-modal-title').textContent = mode === 'scan' ? 'Confirm food' : 'Add food';
+  document.getElementById('fm-name').value = '';
+  document.getElementById('fm-calories').value = '';
+  document.getElementById('fm-protein').value = '';
+  document.getElementById('fm-carbs').value = '';
+  document.getElementById('fm-fat').value = '';
+  document.getElementById('food-modal-scanning').style.display = 'none';
+  document.getElementById('food-modal-form').style.display = 'block';
+  document.getElementById('food-modal-overlay').style.display = 'flex';
+}
+
+function closeFoodModal() {
+  document.getElementById('food-modal-overlay').style.display = 'none';
+  foodDraft = null;
+}
+
+async function saveFoodEntry() {
+  const name = document.getElementById('fm-name').value.trim();
+  const calories = parseInt(document.getElementById('fm-calories').value);
+  if (!name || isNaN(calories)) { showToast('Enter a food name and calories'); return; }
+  const entry = {
+    name,
+    calories,
+    protein: parseInt(document.getElementById('fm-protein').value) || null,
+    carbs: parseInt(document.getElementById('fm-carbs').value) || null,
+    fat: parseInt(document.getElementById('fm-fat').value) || null,
+    source: foodDraft?.source || 'manual',
+    ts: Date.now()
+  };
+  try {
+    await fbPost(`foodlogs/${curFood}/${todayStr()}`, entry);
+    closeFoodModal();
+    showToast('Saved ✓');
+    renderFood();
+  } catch(e) { showToast('Error saving'); }
 }
 
 // ── History ───────────────────────────────────────────────────────
