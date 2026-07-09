@@ -232,6 +232,7 @@
   .food-entry-row:last-child { border-bottom: none; }
   .food-entry-name { font-size: 14px; }
   .food-entry-src { font-size: 10px; color: var(--faint); margin-left: 6px; }
+  .food-entry-macros { font-size: 11px; color: var(--faint); font-family: 'DM Mono', monospace; margin-top: 2px; }
   .food-entry-right { display: flex; align-items: center; gap: 10px; }
   .food-entry-cal { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--muted); }
   .food-entry-del { background: none; border: none; color: var(--faint); font-size: 16px; cursor: pointer; padding: 2px 6px; }
@@ -671,6 +672,7 @@ async function renderFood() {
           <div>
             <span class="food-entry-name">${e.name||'Food'}</span>
             <span class="food-entry-src">${e.source==='scan'?'📷':'✏️'}</span>
+            ${(e.protein||e.carbs||e.fat) ? `<div class="food-entry-macros">${[e.protein?`P ${e.protein}g`:null,e.carbs?`C ${e.carbs}g`:null,e.fat?`F ${e.fat}g`:null].filter(Boolean).join(' · ')}</div>` : ''}
           </div>
           <div class="food-entry-right">
             <span class="food-entry-cal">${e.calories||0} kcal</span>
